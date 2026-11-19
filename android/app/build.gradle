@@ -1,0 +1,7 @@
+plugins { id 'com.android.application' }
+
+android { namespace 'local.vaultgallery'; compileSdk 36
+    defaultConfig { applicationId 'local.vaultgallery'; minSdk 23; targetSdk 36; versionCode 1; versionName '0.1' }
+}
+
+dependencies { implementation 'androidx.documentfile:documentfile:1.0.1' }

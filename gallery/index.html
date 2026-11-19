@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#100e14">
+  <title>LumaVault</title>
+  <style>
+    :root {
+      color-scheme:dark;
+      --canvas:#100e14; --surface:#18151e; --surface-raised:#211d29; --surface-soft:#26212f;
+      --line:#37313f; --line-soft:#2b2632; --text:#f5f1fb; --muted:#c1bacd; --quiet:#948b9f;
+      --accent:#b9a2ff; --accent-strong:#9b7cff; --accent-ink:#171020; --good:#a8dfc0;
+      --warning:#f0cc8b; --danger:#ffb3bc; --radius-card:24px; --radius-control:14px;
+      --ease:180ms cubic-bezier(.2,.7,.2,1);
+    }
+    * { box-sizing:border-box; }
+    html { min-height:100%; background:var(--canvas); scroll-behavior:smooth; }
+    body { margin:0; min-height:100vh; min-height:100dvh; background:radial-gradient(ellipse 760px 460px at 8% -18%,rgba(128,91,186,.17),transparent 72%),var(--canvas); color:var(--text); font:400 16px/1.5 system-ui,-apple-system,'Segoe UI',sans-serif; -webkit-font-smoothing:antialiased; }
+    button,input,select { font:inherit; }
+    button { color:inherit; cursor:pointer; touch-action:manipulation; }
+    button:focus-visible,input:focus-visible,select:focus-visible { outline:3px solid var(--accent); outline-offset:3px; }
+    .shell { width:min(100%,1560px); margin:0 auto; padding:0 clamp(16px,4vw,56px) calc(30px + env(safe-area-inset-bottom)); }
+    .appbar { min-height:78px; display:flex; align-items:center; justify-content:space-between; gap:18px; border-bottom:1px solid var(--line-soft); }
+    .brand { display:flex; align-items:center; gap:12px; min-width:0; }
+    .brand-mark { display:grid; place-items:center; width:42px; height:42px; flex:0 0 auto; border:1px solid #564777; border-radius:15px; color:var(--accent); background:linear-gradient(145deg,#302541,#1d1824); }
+    .brand-mark svg { width:23px; height:23px; }
+    .brand-name { display:block; font-size:17px; font-weight:700; letter-spacing:-.025em; line-height:1.2; }
+    .brand-caption { display:block; margin-top:3px; color:var(--quiet); font-size:11px; font-weight:600; letter-spacing:.08em; }
+    .top-actions { display:flex; align-items:center; gap:8px; }
+    .icon-button { display:grid; place-items:center; width:46px; min-width:46px; height:46px; padding:0; border:1px solid transparent; border-radius:15px; color:var(--muted); background:transparent; transition:color var(--ease),background var(--ease),border-color var(--ease); }
+    .icon-button svg { width:20px; height:20px; }
+    .icon-button:hover,.icon-button:active { color:var(--text); border-color:var(--line); background:var(--surface-raised); }
+    .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+    .library-intro { display:flex; align-items:flex-end; justify-content:space-between; gap:24px; padding:34px 0 22px; }
+    .eyebrow { margin:0 0 8px; color:var(--accent); font-size:12px; font-weight:700; letter-spacing:.13em; text-transform:uppercase; }
+    h1 { margin:0; font-size:clamp(30px,4vw,46px); font-weight:680; letter-spacing:-.045em; line-height:1.08; text-wrap:balance; }
+    .lede { max-width:56ch; margin:10px 0 0; color:var(--muted); font-size:15px; line-height:1.55; }
+    .button { display:inline-flex; align-items:center; justify-content:center; gap:9px; min-height:48px; padding:0 17px; border:1px solid var(--line); border-radius:var(--radius-control); color:var(--text); background:var(--surface-raised); font-size:14px; font-weight:650; transition:background var(--ease),border-color var(--ease),color var(--ease),box-shadow var(--ease); }
+    .button svg { width:19px; height:19px; flex:0 0 auto; }
+    .button:hover,.button:active { border-color:#68598a; background:var(--surface-soft); }
+    .button.primary { border-color:var(--accent); color:var(--accent-ink); background:var(--accent); box-shadow:0 8px 24px rgba(127,95,185,.18); }
+    .button.primary:hover,.button.primary:active { border-color:#c8b8ff; background:#c8b8ff; }
+    .connection-row { display:flex; align-items:center; gap:12px; min-height:48px; padding:0 15px; border:1px solid var(--line-soft); border-radius:16px; background:rgba(24,21,30,.82); }
+    .eds-status { display:inline-flex; align-items:center; gap:9px; min-width:0; color:var(--muted); font-size:13px; font-weight:600; }
+    .status-dot { width:9px; height:9px; flex:0 0 auto; border-radius:50%; background:#a49baa; box-shadow:0 0 0 4px rgba(164,155,170,.12); }
+    .eds-status[data-state="good"] { color:var(--good); }.eds-status[data-state="good"] .status-dot { background:#7cdaa3; box-shadow:0 0 0 4px rgba(124,218,163,.13); }
+    .eds-status[data-state="warn"] { color:var(--warning); }.eds-status[data-state="warn"] .status-dot { background:var(--warning); box-shadow:0 0 0 4px rgba(240,204,139,.12); }
+    .eds-status[data-state="neutral"] .status-dot { background:var(--accent); box-shadow:0 0 0 4px rgba(185,162,255,.12); }
+    .connection-label { margin-left:auto; color:var(--quiet); font-size:12px; }
+    .notice { display:none; margin:14px 0 0; padding:13px 15px; border:1px solid #67424c; border-left:3px solid var(--danger); border-radius:14px; background:#2b1b24; color:#ffe4e7; font-size:14px; line-height:1.5; }
+    .notice.show { display:block; }
+    .workspace { display:grid; grid-template-columns:224px minmax(0,1fr); align-items:start; gap:28px; margin-top:28px; }
+    aside { position:sticky; top:16px; min-width:0; padding:18px 12px 16px; border:1px solid var(--line-soft); border-radius:20px; background:rgba(24,21,30,.78); }
+    .side-title { margin:0 8px 10px; color:var(--quiet); font-size:11px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; }
+    .tree { display:grid; gap:4px; list-style:none; padding:0; margin:0; }
+    .tree li { min-width:0; }
+    .tree button { display:flex; align-items:center; justify-content:space-between; gap:10px; width:100%; min-height:46px; padding:0 11px; border:1px solid transparent; border-radius:12px; color:var(--muted); background:transparent; text-align:left; font-size:14px; transition:background var(--ease),border-color var(--ease),color var(--ease); }
+    .tree button:hover { color:var(--text); background:var(--surface-raised); }
+    .tree button.active { border-color:#4b3e60; color:var(--text); background:#2a2236; }
+    .tree button.active::before { width:6px; height:6px; flex:0 0 auto; border-radius:50%; background:var(--accent); content:""; }
+    .tree button.active:not([data-folder=""])::before { display:none; }
+    .tree button:not([data-folder=""]) { padding-left:15px; }
+    .tree .count { margin-left:auto; color:var(--quiet); font-size:12px; font-variant-numeric:tabular-nums; }
+    .tree button.active .count { color:#d2c3ff; }
+    .drop-hint { margin:16px 8px 0; padding-top:14px; border-top:1px solid var(--line-soft); color:var(--quiet); font-size:12px; line-height:1.55; }
+    main { min-width:0; }
+    .toolbar { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:12px; margin-bottom:17px; }
+    .summary { min-width:0; color:var(--muted); font-size:14px; font-weight:600; font-variant-numeric:tabular-nums; }
+    .controls { display:flex; align-items:center; gap:8px; min-width:0; }
+    .search,select { min-height:48px; border:1px solid var(--line); border-radius:14px; color:var(--text); background:var(--surface); }
+    .search { width:min(320px,34vw); min-width:0; padding:0 14px; }
+    .search::placeholder { color:var(--quiet); }
+    .search:focus,select:focus { border-color:#8c75bb; outline:none; box-shadow:0 0 0 3px rgba(185,162,255,.15); }
+    select { padding:0 34px 0 13px; }
+    .empty { display:grid; grid-template-columns:minmax(120px, .7fr) 1.3fr; align-items:center; gap:clamp(22px,5vw,58px); min-height:340px; padding:clamp(24px,5vw,52px); border:1px solid #3b3347; border-radius:var(--radius-card); background:radial-gradient(ellipse 440px 220px at 14% 50%,rgba(124,91,169,.16),transparent 76%),var(--surface); }
+    .empty-art { display:grid; place-items:center; width:min(100%,190px); aspect-ratio:1; justify-self:center; border:1px solid #493d5d; border-radius:32px; color:var(--accent); background:linear-gradient(150deg,#302640,#201b27 66%); box-shadow:inset 0 1px rgba(255,255,255,.07),0 24px 50px rgba(8,6,13,.28); }
+    .empty-art svg { width:70px; height:70px; }
+    .empty-copy { max-width:470px; }
+    .empty-kicker { margin:0 0 10px; color:var(--accent); font-size:12px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; }
+    .empty h2 { margin:0; font-size:clamp(24px,3vw,34px); font-weight:660; letter-spacing:-.035em; line-height:1.12; text-wrap:balance; }
+    .empty p { margin:12px 0 20px; color:var(--muted); font-size:15px; line-height:1.6; }
+    .empty-actions { display:flex; flex-wrap:wrap; gap:9px; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(176px,1fr)); gap:15px; }
+    .card { min-width:0; overflow:hidden; border:1px solid var(--line-soft); border-radius:17px; background:var(--surface); transition:border-color var(--ease),background var(--ease); }
+    .card:hover { border-color:#68598a; background:var(--surface-raised); }
+    .card button { display:block; width:100%; padding:0; border:0; color:inherit; background:transparent; text-align:left; }
+    .thumb { display:block; width:100%; aspect-ratio:1.12; object-fit:cover; background:#292333; }
+    .card-meta { min-width:0; padding:11px 12px 13px; }
+    .filename { overflow:hidden; color:var(--text); font-size:14px; font-weight:600; text-overflow:ellipsis; white-space:nowrap; }
+    .path { overflow:hidden; margin-top:3px; color:var(--quiet); font-size:12px; text-overflow:ellipsis; white-space:nowrap; }
+    .lightbox { display:none; position:fixed; inset:0; z-index:30; align-items:center; justify-content:center; padding:calc(24px + env(safe-area-inset-top)) 24px calc(84px + env(safe-area-inset-bottom)); background:rgba(10,8,13,.97); }
+    .lightbox.open { display:flex; }
+    .lightbox-image { max-width:min(88vw,1360px); max-height:78dvh; object-fit:contain; border-radius:10px; }
+    .viewer-close,.viewer-prev,.viewer-next { position:absolute; display:grid; place-items:center; min-width:48px; min-height:48px; padding:0 14px; border:1px solid #514660; border-radius:15px; color:var(--text); background:#211c28; }
+    .viewer-close { top:calc(16px + env(safe-area-inset-top)); right:16px; }
+    .viewer-prev,.viewer-next { top:50%; transform:translateY(-50%); font-size:25px; }
+    .viewer-prev { left:calc(12px + env(safe-area-inset-left)); }.viewer-next { right:calc(12px + env(safe-area-inset-right)); }
+    .viewer-caption { position:absolute; bottom:calc(20px + env(safe-area-inset-bottom)); left:50%; width:min(90vw,720px); transform:translateX(-50%); text-align:center; }
+    .viewer-caption strong { display:block; font-size:15px; }.viewer-caption span { color:var(--muted); font-size:13px; }
+    .help-modal,.log-modal { display:none; position:fixed; inset:0; z-index:40; align-items:center; justify-content:center; padding:24px; background:rgba(8,6,12,.78); backdrop-filter:blur(8px); }
+    .help-modal.open,.log-modal.open { display:flex; }
+    .help-card,.log-card { width:min(680px,100%); max-height:min(88dvh,860px); overflow:auto; padding:clamp(20px,4vw,30px); border:1px solid #4b4059; border-radius:24px; background:#1b1721; box-shadow:0 28px 90px rgba(5,3,9,.6); }
+    .log-card { width:min(760px,100%); }
+    .log-card pre { max-height:42dvh; overflow:auto; padding:14px; border:1px solid var(--line-soft); border-radius:14px; background:#100e14; color:var(--muted); font:12px/1.6 ui-monospace,SFMono-Regular,Consolas,monospace; white-space:pre-wrap; overflow-wrap:anywhere; }
+    .help-head { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; }
+    .help-head .viewer-close { position:static; flex:0 0 auto; }
+    .help-head h2 { margin:4px 0 0; font-size:clamp(25px,5vw,36px); font-weight:660; letter-spacing:-.04em; line-height:1.12; }
+    .help-lede { max-width:58ch; color:var(--muted); line-height:1.6; }
+    .help-steps { display:grid; gap:13px; margin:22px 0; padding-left:24px; color:#ddd7e5; line-height:1.55; }
+    .help-steps li::marker { color:var(--accent); font-weight:700; }
+    .help-steps strong { color:var(--text); }
+    .help-note { margin:0; padding:14px 16px; border:1px solid #4b4059; border-left:3px solid var(--accent); border-radius:14px; color:#ddd5e8; background:#241e2d; font-size:14px; line-height:1.55; }
+    footer { margin:26px 0 0; color:var(--quiet); font-size:12px; text-align:center; }
+    @media (min-width:1200px) { .workspace { grid-template-columns:244px minmax(0,1fr); gap:34px; } .grid { grid-template-columns:repeat(auto-fill,minmax(195px,1fr)); gap:18px; } }
+    @media (max-width:900px) { .shell { padding-right:24px; padding-left:24px; } .workspace { grid-template-columns:196px minmax(0,1fr); gap:18px; } .grid { grid-template-columns:repeat(auto-fill,minmax(145px,1fr)); gap:11px; } }
+    @media (max-width:680px) {
+      .shell { padding-right:16px; padding-left:16px; }
+      .appbar { min-height:68px; gap:8px; }
+      .brand { gap:9px; }.brand-mark { width:38px; height:38px; border-radius:13px; }.brand-mark svg { width:21px; height:21px; }
+      .brand-name { font-size:16px; }.brand-caption { font-size:9px; letter-spacing:.07em; }
+      .top-actions { gap:2px; }.icon-button { width:42px; min-width:42px; height:44px; border-radius:13px; }
+      .library-intro { display:block; padding:25px 0 17px; }
+      h1 { font-size:clamp(30px,9vw,38px); }
+      .lede { margin-top:8px; font-size:14px; }
+      #pickButton { width:100%; margin-top:18px; }
+      .connection-row { min-height:46px; gap:8px; padding:0 12px; }.connection-label { display:none; }
+      .eds-status { font-size:12px; }.connection-label { font-size:11px; }
+      .workspace { display:block; margin-top:20px; }
+      aside { position:static; margin:0 -16px 16px; padding:0 16px 4px; overflow:hidden; border:0; border-radius:0; background:transparent; }
+      .side-title { margin:0 0 7px 2px; font-size:10px; }
+      .tree { display:flex; gap:7px; overflow-x:auto; overscroll-behavior-x:contain; padding:0 2px 8px; scrollbar-width:none; }
+      .tree::-webkit-scrollbar { display:none; }
+      .tree li { flex:0 0 auto; }
+      .tree button,.tree button:not([data-folder=""]) { width:auto; min-height:44px; max-width:72vw; gap:8px; padding:0 12px; border:1px solid var(--line); border-radius:13px; background:#1a1720; white-space:nowrap; }
+      .tree button.active { border-color:#675486; background:#2b2435; }
+      .tree button.active::before { width:6px; height:6px; }
+      .tree button.active:not([data-folder=""])::before { display:block; }
+      .tree button.nested { margin:0; font-size:14px; }
+      .tree button.nested::before { display:none; }
+      .tree button .count { margin-left:3px; }
+      .drop-hint { display:none; }
+      .toolbar { grid-template-columns:minmax(0,1fr); gap:9px; margin-bottom:13px; }
+      .controls { display:grid; grid-template-columns:minmax(0,1fr) 118px; width:100%; gap:8px; }
+      .search,select { width:100%; min-height:48px; font-size:16px; }
+      .summary { font-size:13px; }
+      .empty { grid-template-columns:1fr; gap:18px; min-height:0; padding:24px 20px; border-radius:21px; }
+      .empty-art { width:100px; border-radius:25px; }.empty-art svg { width:48px; height:48px; }
+      .empty-copy { max-width:none; text-align:center; }
+      .empty h2 { font-size:26px; }.empty p { margin:9px 0 17px; font-size:14px; }
+      .empty-actions { display:grid; grid-template-columns:1fr; }.empty-actions .button { width:100%; }
+      .grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+      .card { border-radius:14px; }.thumb { aspect-ratio:1; }.card-meta { padding:9px 10px 11px; }
+      .filename { font-size:13px; }.path { font-size:11px; }
+      .lightbox { padding-right:12px; padding-left:12px; }
+      .lightbox-image { max-width:100%; max-height:72dvh; }
+      .viewer-prev,.viewer-next { min-width:48px; min-height:52px; padding:0 10px; border-radius:14px; }
+      .viewer-prev { left:calc(8px + env(safe-area-inset-left)); }.viewer-next { right:calc(8px + env(safe-area-inset-right)); }
+      .help-modal,.log-modal { align-items:flex-end; padding:0; }
+      .help-card,.log-card { width:100%; max-height:90dvh; padding:22px 18px calc(20px + env(safe-area-inset-bottom)); border-radius:24px 24px 0 0; border-bottom:0; }
+      .help-head { gap:10px; }.help-head .viewer-close { position:static; min-width:54px; min-height:44px; }
+      .help-steps { gap:11px; margin:18px 0; font-size:14px; }
+      .log-card pre { max-height:35dvh; }
+      footer { margin-top:20px; text-align:left; line-height:1.5; }
+    }
+    @media (max-width:360px) { .brand-caption { display:none; }.top-actions { gap:0; }.icon-button { width:40px; min-width:40px; }.connection-label { display:none; } }
+    @media (orientation:landscape) and (max-height:520px) { .library-intro { padding-top:18px; padding-bottom:12px; }.workspace { margin-top:14px; }.lightbox-image { max-height:66dvh; } }
+    @media (prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto !important; animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; } }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="appbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5 12 4l8 4.5v10.25a1.25 1.25 0 0 1-1.25 1.25H5.25A1.25 1.25 0 0 1 4 18.75Z"/><path d="M4 9h16M8 9v11m8-11v11M10 13h4"/></svg></span>
+        <span><span class="brand-name">LumaVault</span><span class="brand-caption">PRIVATE PHOTO LIBRARY</span></span>
+      </div>
+      <nav class="top-actions" aria-label="App tools">
+        <button class="icon-button" id="helpButton" type="button" aria-label="Help" title="Help"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.7 9a2.4 2.4 0 1 1 4.1 1.7c-1.2 1.1-1.8 1.4-1.8 2.8M12 17h.01"/></svg></button>
+        <button class="icon-button" id="logButton" type="button" aria-label="Diagnostics" title="Diagnostics"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19V9m7 10V5m7 14v-7"/><path d="M3 19h18"/></svg></button>
+        <button class="icon-button" id="resetButton" type="button" aria-label="Clear gallery" title="Clear gallery"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6m4-6v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button>
+      </nav>
+      <input id="folderInput" type="file" webkitdirectory directory multiple accept="image/*" hidden>
+      <input id="filesInput" type="file" multiple accept="image/*" hidden>
+    </header>
+    <section class="library-intro" aria-labelledby="pageTitle">
+      <div><p class="eyebrow">Your space · kept on your device</p><h1 id="pageTitle">Your private gallery</h1><p class="lede">Browse photos from an unlocked EDS Lite vault. LumaVault reads locally and keeps your pictures off the cloud.</p></div>
+      <button class="button primary" id="pickButton" type="button"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 7.5h6l2 2h9v9a1.5 1.5 0 0 1-1.5 1.5H5a1.5 1.5 0 0 1-1.5-1.5Z"/><path d="M12 12v5m-2.5-2.5h5"/></svg>Choose a folder</button>
+    </section>
+    <div class="connection-row"><div class="eds-status" id="edsStatus" data-state="unknown"><span class="status-dot" aria-hidden="true"></span><span id="edsStatusText" role="status" aria-live="polite">EDS connection: checking…</span></div><span class="connection-label">Unlock the volume in EDS Lite first</span></div>
+    <div class="notice" id="notice" role="status"></div>
+    <section class="workspace" aria-label="Gallery workspace">
+      <aside aria-label="Album navigation">
+        <p class="side-title">Albums</p>
+        <ul class="tree" id="tree"><li><button class="active" data-folder="" aria-current="page">All photos <span class="count" id="allCount">0</span></button></li></ul>
+        <p class="drop-hint">EDS Lite tip: open/unlock the container first. In Choose a folder, select the opened container by its own name in Android's picker.</p>
+      </aside>
+      <main id="mainContent">
+        <div class="toolbar">
+          <div class="summary" id="summary" aria-live="polite">No folder loaded yet</div>
+          <div class="controls"><input class="search" id="search" type="search" placeholder="Search your photos" aria-label="Search photos"><select id="sort" aria-label="Sort photos"><option value="name">Name</option><option value="newest">Newest</option><option value="oldest">Oldest</option><option value="size">Largest</option></select></div>
+        </div>
+        <div class="empty" id="empty"><div class="empty-art" aria-hidden="true"><svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="11" width="48" height="42" rx="10"/><circle cx="41" cy="25" r="4"/><path d="m11 42 13-13 10 10 6-6 13 13M19 53l12-12 10 12"/></svg></div><div class="empty-copy"><p class="empty-kicker">A quiet place for your photos</p><h2>Start with your unlocked vault.</h2><p>Open the container in EDS Lite, then choose its folder here. LumaVault finds photos inside nested albums. You can also select pictures directly.</p><div class="empty-actions"><button class="button primary" id="emptyPick" type="button"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 7.5h6l2 2h9v9a1.5 1.5 0 0 1-1.5 1.5H5a1.5 1.5 0 0 1-1.5-1.5Z"/><path d="M12 12v5m-2.5-2.5h5"/></svg>Choose a folder</button><button class="button" id="filesPick" type="button">Select photos</button></div></div></div>
+        <div class="grid" id="grid" hidden></div>
+      </main>
+    </section>
+    <footer>Photos stay on this device. Close LumaVault before unmounting your vault in EDS Lite.</footer>
+  </div>
+  <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Picture viewer">
+    <button class="viewer-close" id="closeViewer">Close</button><button class="viewer-prev" id="prevViewer" aria-label="Previous picture">‹</button><img class="lightbox-image" id="viewerImage" alt=""><button class="viewer-next" id="nextViewer" aria-label="Next picture">›</button><div class="viewer-caption"><strong id="viewerName"></strong><span id="viewerPath"></span></div>
+  </div>
+  <div class="help-modal" id="helpModal" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+    <div class="help-card">
+      <div class="help-head"><div><div class="eyebrow">Start here</div><h2 id="helpTitle">Use LumaVault with EDS</h2></div><button class="viewer-close" id="closeHelp">Close</button></div>
+      <p class="help-lede">LumaVault is the picture browser. EDS Lite remains the part that unlocks your VeraCrypt container.</p>
+      <ol class="help-steps">
+        <li><strong>Prepare exFAT.</strong> If the container uses exFAT, install EDS Lite’s additional exFAT module first.</li>
+        <li><strong>Unlock the container.</strong> Open it in EDS Lite and keep it open while browsing.</li>
+        <li><strong>Scan the vault folder.</strong> Tap <em>Choose a folder</em>. In Android's picker, select the opened container by its own name (it may not be labelled “EDS Lite”), or choose the picture folder inside it. LumaVault scans nested folders for pictures.</li>
+        <li><strong>If the EDS location is not listed.</strong> Use EDS Lite's <em>Share</em> or <em>Open with</em> action on pictures and choose LumaVault. If EDS Lite offers multi-select sharing, send several pictures together.</li>
+        <li><strong>Browse.</strong> Use the folder list, search, sorting, and any picture to open the full-screen viewer.</li>
+        <li><strong>Finish safely.</strong> Close LumaVault, then close or unmount the container in EDS Lite.</li>
+      </ol>
+      <p class="help-note">No root is required. EDS Lite must stay unlocked while LumaVault reads the selected folder. The Android picker grants access only to the folder you choose; unmount the volume in EDS Lite when finished.</p>
+    </div>
+  </div>
+  <div class="log-modal" id="logModal" role="dialog" aria-modal="true" aria-labelledby="logTitle">
+    <div class="log-card"><div class="help-head"><div><div class="eyebrow">For troubleshooting</div><h2 id="logTitle">Diagnostic log</h2></div><button class="viewer-close" id="closeLog">Close</button></div>
+      <p class="help-lede">Review this before saving. It can include folder names and Android/EDS error details. It does not include picture contents or individual picture filenames. Save the text file, then attach it in your chat.</p>
+      <pre id="logPreview">No diagnostic entries yet.</pre>
+      <div class="top-actions"><button class="button primary" id="exportLog">Save log as .txt</button><button class="button ghost" id="clearLog">Clear log</button></div>
+      <p id="logResult" class="summary" role="status"></p>
+    </div>
+  </div>
+  <script>
+    const imageTypes = new Set(['jpg','jpeg','png','gif','webp','avif','bmp','heic','heif','svg']);
+    let files = [], visible = [], current = -1, objectUrls = new Map(), folder = '', collectionName = '', filePaths = new WeakMap(), nativeUris = new WeakMap();
+    const $ = id => document.getElementById(id);
+    const notice = (message, bad=false) => { $('notice').textContent=message; $('notice').style.borderColor=bad?'var(--red)':'var(--gold)'; $('notice').classList.add('show'); };
+    const setEdsStatus = (state, text) => { $('edsStatus').dataset.state=state; $('edsStatusText').textContent=text; };
+    const pathOf = f => filePaths.get(f) || f.webkitRelativePath || f.name;
+    const extOf = name => name.split('.').pop().toLowerCase();
+    const imageFile = f => imageTypes.has(extOf(f.name)) || (f.type || '').toLowerCase().startsWith('image/');
+    const urlFor = f => { if (nativeUris.has(f)) return nativeUris.get(f); if (!objectUrls.has(f)) objectUrls.set(f, URL.createObjectURL(f)); return objectUrls.get(f); };
+    async function choose() {
+      if (window.AndroidGallery && typeof window.AndroidGallery.pickFolder === 'function') { window.AndroidGallery.pickFolder(); return; }
+      if (window.showDirectoryPicker) {
+        try {
+          const handle = await window.showDirectoryPicker({ mode:'read' });
+          const picked = [];
+          async function walk(dir, prefix='') {
+            for await (const entry of dir.values()) {
+              const next = prefix ? `${prefix}/${entry.name}` : entry.name;
+              if (entry.kind === 'directory') await walk(entry, next);
+              else if (entry.kind === 'file') { const file=await entry.getFile(); filePaths.set(file,next); picked.push(file); }
+            }
+          }
+          await walk(handle, handle.name);
+          loadFiles(picked);
+          return;
+        } catch (error) {
+          if (error?.name !== 'AbortError') notice('Folder access was not available. Try the Android file picker instead.', true);
+        }
+      }
+      $('folderInput').click();
+    }
+    const logEvent = message => { try { window.AndroidGallery?.logEvent?.(message); } catch (_) {} };
+    window.onDiagnosticExported = (success, detail='') => { $('logResult').textContent=success?'Log saved. Attach the .txt file in this chat.':`Could not save the log. ${detail}`; logEvent(success?'Diagnostic log save completed':'Diagnostic log save failed'); };
+    window.onNativeFolder = (raw, source='unknown', warning='') => {
+      try {
+        const items = typeof raw === 'string' ? JSON.parse(raw) : raw, picked = [];
+        logEvent(`Gallery received folder results; source=${source}; image count=${items.length}${warning?'; partial scan warning':''}`);
+        items.forEach(item => { const file = { name:item.name, size:item.size || 0, type:item.mime || 'image/*', lastModified:item.lastModified || 0 }; filePaths.set(file, item.path); nativeUris.set(file, item.uri); picked.push(file); });
+        loadFiles(picked);
+        if (warning) {
+          setEdsStatus(source === 'eds' ? 'warn' : 'neutral', `${source === 'eds' ? 'EDS scan partial' : 'Folder scan partial'} · ${items.length} pictures found`);
+          notice(warning, true);
+        } else if (source === 'eds') setEdsStatus(items.length ? 'good' : 'warn', items.length ? `EDS connection: working · ${items.length} pictures found` : 'EDS connection: opened, but no pictures found');
+        else setEdsStatus('neutral', items.length ? `Folder readable · ${items.length} pictures found` : 'Folder readable · no pictures found');
+      } catch (error) {
+        logEvent(`Gallery could not process folder results: ${error?.message || 'unknown error'}`);
+        setEdsStatus('warn', 'Folder results could not be displayed');
+        const detail = error && error.message ? ` Details: ${error.message}` : '';
+        notice(`LumaVault received the folder result but could not display it.${detail}`, true);
+      }
+    };
+    window.onNativeScanning = () => { logEvent('Android began folder scan'); setEdsStatus('neutral', 'Scanning selected folder…'); $('summary').textContent='Scanning folders for pictures…'; };
+    window.onNativeError = message => { logEvent(`Android reported an error: ${message || 'unknown error'}`); setEdsStatus('warn', 'EDS connection: could not read selection'); notice(message || 'Android could not read the selected location.', true); };
+    if (window.AndroidGallery && typeof window.AndroidGallery.edsStatus === 'function') {
+      const state = window.AndroidGallery.edsStatus();
+      setEdsStatus(state === 'provider' ? 'good' : 'warn', state === 'provider' ? 'EDS folder provider available · unlock, then scan' : state === 'installed' ? 'EDS installed · folder provider not detected; sharing may still work' : 'EDS not detected · Android folders still work');
+    } else if (!window.showDirectoryPicker) setEdsStatus('neutral', 'Browser mode · choose a folder or pictures');
+    else setEdsStatus('neutral', 'Browser mode · choose an exposed folder');
+    $('pickButton').onclick = choose; $('emptyPick').onclick = choose; $('filesPick').onclick = () => { if (window.AndroidGallery && typeof window.AndroidGallery.pickPictures === 'function') window.AndroidGallery.pickPictures(); else $('filesInput').click(); };
+    $('resetButton').onclick = () => { files=[]; visible=[]; folder=''; collectionName=''; objectUrls.forEach(URL.revokeObjectURL); objectUrls.clear(); $('grid').hidden=true; $('empty').hidden=false; $('summary').textContent='No folder loaded yet'; $('tree').innerHTML='<li><button class="active" data-folder="">All photos <span class="count" id="allCount">0</span></button></li>'; bindTree(); };
+    $('folderInput').onchange = e => loadFiles([...e.target.files]);
+    $('filesInput').onchange = e => loadFiles([...e.target.files]);
+    function loadFiles(selected) {
+      files = selected.filter(imageFile); folder = '';
+      collectionName = selected.find(f => f.webkitRelativePath)?.webkitRelativePath.split('/')[0] || (selected.length ? 'Shared pictures' : '');
+      if (!files.length) { $('grid').hidden=true; $('empty').hidden=false; $('summary').textContent='No folder loaded yet'; notice('No supported pictures were found in that selection.', true); return; }
+      buildTree(); render(); notice(`${files.length} picture${files.length===1?'':'s'} loaded${collectionName ? ` from ${collectionName}` : ''}.`);
+    }
+    function buildTree() {
+      const map = new Map([['',files.length]]);
+      files.forEach(f => { const bits=pathOf(f).replace(/\\/g,'/').split('/').filter(Boolean).slice(0,-1); for(let i=1;i<=bits.length;i++){ const key=bits.slice(0,i).join('/'); map.set(key,(map.get(key)||0)+1); } });
+      $('tree').innerHTML=''; map.forEach((count,key)=>{ const li=document.createElement('li'); const b=document.createElement('button'); b.dataset.folder=key; if(key) { b.className='nested'; b.dataset.folder=key; b.title=key; b.setAttribute('aria-label',`${key}, ${count} pictures`); } if(key===folder) b.classList.add('active'); b.append(document.createTextNode(key ? key.split('/').pop() : 'All photos')); const badge=document.createElement('span'); badge.className='count'; if(!key) badge.id='allCount'; badge.textContent=count; b.appendChild(badge); li.appendChild(b); $('tree').appendChild(li); }); bindTree();
+    }
+    function bindTree() { const buttons=[...document.querySelectorAll('#tree button')]; buttons.forEach(b=>{ b.setAttribute('aria-pressed',String(b.dataset.folder===folder)); b.onclick=()=>{ buttons.forEach(x=>{ x.classList.remove('active'); x.setAttribute('aria-pressed','false'); }); b.classList.add('active'); b.setAttribute('aria-pressed','true'); folder=b.dataset.folder; render(); }; }); }
+    function render() {
+      const query=$('search').value.trim().toLowerCase(), sort=$('sort').value;
+      const selectedParts=folder ? folder.toLowerCase().split('/') : [];
+      visible=files.filter(f=>{ const p=pathOf(f).replace(/\\/g,'/').toLowerCase(), parts=p.split('/').filter(Boolean); const dirs=parts.slice(0,-1); const inFolder=!selectedParts.length || selectedParts.every((part,i)=>dirs[i]===part); return inFolder && (!query || p.includes(query)); });
+      visible.sort((a,b)=> sort==='newest'?b.lastModified-a.lastModified:sort==='oldest'?a.lastModified-b.lastModified:sort==='size'?b.size-a.size:pathOf(a).localeCompare(pathOf(b)));
+      $('summary').textContent=`${visible.length} of ${files.length} picture${files.length===1?'':'s'}${folder?' · '+folder:collectionName?' · '+collectionName:''}`; $('allCount').textContent=files.length; $('empty').hidden=true; $('grid').hidden=false; $('grid').innerHTML='';
+      visible.forEach((f,i)=>{ const card=document.createElement('article'); card.className='card'; const b=document.createElement('button'); b.onclick=()=>openViewer(i); const img=document.createElement('img'); img.className='thumb'; img.loading='lazy'; img.src=urlFor(f); img.alt=f.name; const meta=document.createElement('div'); meta.className='card-meta'; const name=document.createElement('div'); name.className='filename'; name.textContent=f.name; const p=document.createElement('div'); p.className='path'; p.textContent=pathOf(f).split('/').slice(0,-1).join(' / ')||folder; meta.append(name,p); b.append(img,meta); card.appendChild(b); $('grid').appendChild(card); });
+    }
+    $('search').oninput=render; $('sort').onchange=render;
+    const helpModal=$('helpModal'); const openHelp=()=>helpModal.classList.add('open'); const closeHelp=()=>helpModal.classList.remove('open');
+    $('helpButton').onclick=openHelp; $('closeHelp').onclick=closeHelp; helpModal.onclick=e=>{if(e.target===helpModal)closeHelp();};
+    const logModal=$('logModal');
+    $('logButton').onclick=()=>{ const native=window.AndroidGallery; $('logPreview').textContent=native?.getDiagnosticLog ? native.getDiagnosticLog() : 'Browser-only session: Android diagnostic logging is available in the installed app.'; $('logResult').textContent=''; logModal.classList.add('open'); };
+    $('closeLog').onclick=()=>logModal.classList.remove('open'); logModal.onclick=e=>{if(e.target===logModal)logModal.classList.remove('open');};
+    $('exportLog').onclick=()=>{ if(window.AndroidGallery?.exportDiagnosticLog) window.AndroidGallery.exportDiagnosticLog(); else $('logResult').textContent='Install and open the Android app to save an exportable diagnostic log.'; };
+    $('clearLog').onclick=()=>{ window.AndroidGallery?.clearDiagnosticLog?.(); $('logPreview').textContent=window.AndroidGallery?.getDiagnosticLog?.() || 'Log cleared.'; $('logResult').textContent='Log cleared.'; };
+    if (!localStorage.getItem('lumavault-help-seen')) { openHelp(); localStorage.setItem('lumavault-help-seen','1'); }
+    function openViewer(i) { current=i; const f=visible[current]; $('viewerImage').src=urlFor(f); $('viewerImage').alt=f.name; $('viewerName').textContent=f.name; $('viewerPath').textContent=pathOf(f); $('lightbox').classList.add('open'); }
+    function step(n) { if(!visible.length)return; current=(current+n+visible.length)%visible.length; openViewer(current); }
+    $('closeViewer').onclick=()=> $('lightbox').classList.remove('open'); $('prevViewer').onclick=()=>step(-1); $('nextViewer').onclick=()=>step(1); $('lightbox').onclick=e=>{if(e.target.id==='lightbox')$('lightbox').classList.remove('open');};
+    document.onkeydown=e=>{ if(e.key==='Escape'){ $('lightbox').classList.remove('open'); closeHelp(); logModal.classList.remove('open'); } if(!$('lightbox').classList.contains('open'))return; if(e.key==='ArrowLeft')step(-1); if(e.key==='ArrowRight')step(1); };
+  </script>
+</body>
+</html>
