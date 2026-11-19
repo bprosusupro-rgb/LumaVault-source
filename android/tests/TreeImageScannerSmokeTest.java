@@ -21,7 +21,7 @@ public final class TreeImageScannerSmokeTest {
     }
   }
 
-  private static final class Photo implements TreeImageScanner.Node {
+  private static class Photo implements TreeImageScanner.Node {
     final String name;
     final String key;
     Photo(String name, String key) { this.name = name; this.key = key; }
@@ -41,11 +41,15 @@ public final class TreeImageScannerSmokeTest {
     unreadable.listingFailure = new SecurityException("permission denied");
     album.children.add(unreadable);
     root.children.add(album);
+    root.children.add(new Photo("no-extension", "mime-only") {
+      @Override public boolean hasImageMime() { return true; }
+    });
 
     TreeImageScanner.Result result = TreeImageScanner.scan(root);
-    require(result.images.size() == 2, "readable photos survive a nested-folder access failure");
+    require(result.images.size() == 3, "readable photos survive a nested-folder access failure");
     require("cover.jpg".equals(result.images.get(0).path), "root photo keeps its relative path");
     require("Album/trip.png".equals(result.images.get(1).path), "nested photo keeps its relative path");
+    require("no-extension".equals(result.images.get(2).path), "provider MIME identifies files without an extension");
     require(result.skippedFolders == 1, "unreadable folder is counted once");
     require("Album/Android".equals(result.firstSkippedPath), "warning identifies the unreadable folder");
     require(result.warning().contains("Album/Android"), "partial-scan warning names the skipped folder");

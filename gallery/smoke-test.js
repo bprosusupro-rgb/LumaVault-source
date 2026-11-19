@@ -20,7 +20,15 @@ class Element {
     };
   }
   append(...nodes) { this.children.push(...nodes); }
-  appendChild(node) { this.children.push(node); return node; }
+  appendChild(node) {
+    this.children.push(...(node.tagName === '#FRAGMENT' ? node.children : [node]));
+    return node;
+  }
+  toggleAttribute(name, value) { this[name] = value; }
+  removeAttribute(name) { delete this[name]; }
+  focus() {}
+  scrollIntoView() {}
+  querySelector() { return this.children[0]?.children[0]; }
   setAttribute(name, value) { this[name] = String(value); }
   set innerHTML(value) { this.children = []; this.html = value; }
   get innerHTML() { return this.html ?? ''; }
@@ -46,7 +54,9 @@ const elements = Object.fromEntries(ids.map(id => [id, new Element(id === 'tree'
 elements.sort.value = 'name';
 const document = {
   getElementById: id => id === 'allCount' ? (elements.tree.children.flatMap(li => li.children).flatMap(button => button.children).find(child => child.id === 'allCount') ?? null) : elements[id] ?? (elements[id] = new Element()),
+  body: new Element('body'),
   createElement: tag => new Element(tag),
+  createDocumentFragment: () => new Element('#fragment'),
   createTextNode: text => ({ textContent: String(text) }),
   querySelectorAll: selector => selector === '#tree button' ? elements.tree.children.flatMap(li => li.children).filter(el => el.tagName === 'BUTTON') : []
 };
@@ -55,7 +65,7 @@ const window = { AndroidGallery: { edsStatus: () => 'provider', logEvent() {}, g
 const context = {
   window, document, localStorage: { getItem: () => 'seen', setItem() {} },
   URL: { createObjectURL: file => `blob:${file.name}`, revokeObjectURL() {} },
-  console
+  console, setTimeout, clearTimeout
 };
 vm.runInNewContext(script, context, { filename: filePath });
 
@@ -64,6 +74,7 @@ assert.equal(elements.logPreview.textContent, 'test diagnostic entry');
 assert.equal(elements.logModal.classList.contains('open'), true);
 elements.exportLog.click();
 assert.equal(exported, true, 'export button calls the Android save flow');
+assert.equal(window.closeGalleryDialog(), true);
 
 window.onNativeFolder([
   { name: 'cover.jpg', path: 'Album/cover.jpg', uri: 'native://img0/cover.jpg', size: 12, mime: 'image/jpeg' },
@@ -98,4 +109,27 @@ window.onNativeFolder([
 document.createElement = createElement;
 assert.match(elements.notice.textContent, /gallery rendering failed after folder selection/);
 
-console.log('PASS: nested albums, folder filtering, EDS status, and photo viewer');
+window.onNativeFolder(Array.from({ length: 121 }, (_, index) => ({
+  name: String(index).padStart(3, '0') + '.jpg',
+  path: 'Album/' + String(index).padStart(3, '0') + '.jpg',
+  uri: 'native://original/' + index,
+  thumbnail: 'native://thumbnail/' + index,
+  mime: 'image/jpeg'
+})), 'eds');
+assert.equal(elements.grid.children.length, 60, 'large libraries mount only one page of photos');
+const firstCard = elements.grid.children[0].children[0];
+assert.equal(firstCard.children[0].src, 'native://thumbnail/0');
+firstCard.click();
+assert.equal(elements.viewerImage.src, 'native://original/0');
+assert.equal(window.closeGalleryDialog(), true);
+elements.nextPage.click();
+assert.equal(elements.grid.children.length, 60);
+assert.equal(elements.pageLabel.textContent, '2 / 3');
+elements.nextPage.click();
+assert.equal(elements.grid.children.length, 1);
+assert.equal(elements.nextPage.disabled, true);
+elements.resetButton.click();
+assert.equal(elements.grid.children.length, 0);
+assert.equal(elements.empty.hidden, false);
+
+console.log('PASS: diagnostics, nested albums, viewer, bounded photo pages, and reset');

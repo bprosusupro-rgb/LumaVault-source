@@ -14,6 +14,7 @@ public final class TreeImageScanner {
     String key();
     boolean isDirectory();
     boolean isFile();
+    default boolean hasImageMime() { return false; }
     Node[] listFiles() throws Exception;
   }
 
@@ -84,7 +85,7 @@ public final class TreeImageScanner {
       try {
         if (child.isDirectory()) {
           walk(child, childPath, false, visited, result);
-        } else if (child.isFile() && isImage(name)) {
+        } else if (child.isFile() && (isImage(name) || child.hasImageMime())) {
           result.images.add(new Image(child, name, childPath));
         }
       } catch (Exception error) {

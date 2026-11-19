@@ -1,7 +1,28 @@
 plugins { id 'com.android.application' }
 
-android { namespace 'local.vaultgallery'; compileSdk 36
-    defaultConfig { applicationId 'local.vaultgallery'; minSdk 23; targetSdk 36; versionCode 1; versionName '0.1' }
+def galleryAssets = tasks.register('prepareGalleryAssets', Sync) {
+    from(rootProject.layout.projectDirectory.file('../gallery/index.html'))
+    into(layout.buildDirectory.dir('generated/galleryAssets/www'))
 }
 
-dependencies { implementation 'androidx.documentfile:documentfile:1.0.1' }
+android {
+    namespace 'local.vaultgallery'
+    compileSdk 36
+
+    defaultConfig {
+        applicationId 'local.vaultgallery'
+        minSdk 23
+        targetSdk 36
+        versionCode 2
+        versionName '0.2'
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    sourceSets.main.assets.srcDir(layout.buildDirectory.dir('generated/galleryAssets'))
+}
+
+tasks.named('preBuild').configure { dependsOn(galleryAssets) }

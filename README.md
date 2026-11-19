@@ -7,7 +7,7 @@ This folder is the complete editable source for the LumaVault Android gallery.
 
 To run the dependency-free gallery behavior check, open a terminal in `gallery/` and run `node smoke-test.js`.
 
-To rebuild on this Windows machine, open PowerShell in `android` and run `./build.ps1`. The script packages `gallery/index.html`, builds the Android app, and places only the finished `LumaVault-debug.apk` in `F:\apk-vr`.
+See [Android build instructions](android/README.md) for the Gradle wrapper, release build, signing, and Windows debug helper.
 
 ## How the EDS connection works
 
